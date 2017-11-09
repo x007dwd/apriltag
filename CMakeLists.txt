@@ -86,7 +86,7 @@ target_link_libraries(opencv_demo
         )
 
 add_executable(duo_pose
-        example/DUOStereoVIO.cpp
+        example/DuoAprilTag.cpp
         example/DUOReader.cpp
         )
 target_link_libraries(duo_pose
