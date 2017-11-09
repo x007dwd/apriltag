@@ -4,8 +4,8 @@ project(apriltag)
 SET(CMAKE_BUILD_TYPE Debug)
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall -O3 -march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -march=native")
-set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -march=native")
+#set(CMAKE_CXX_STANDARD 11)
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-modules)
 
@@ -23,14 +23,21 @@ endif ()
 find_library(DUO_LIBRARY DUO HINTS ${DUO_SDK}/linux/${DUOLib_ARCH})
 
 find_package( Glog REQUIRED )
+find_package( G2O REQUIRED )
+find_package( CSparse REQUIRED )
 find_package(OpenCV REQUIRED)
-
+find_package(Eigen3 REQUIRED)
 include_directories(
         common
         include
         example
+        pose
         ${PROJECT_SOURCE_DIR}
         ${GLOG_INCLUDE_DIRS}
+        ${EIGEN3_INCLUDE_DIR}
+        ${Pangolin_INCLUDE_DIRS}
+        ${G2O_INCLUDE_DIRS}
+        ${CSPARSE_INCLUDE_DIR}
 )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
@@ -69,14 +76,6 @@ set(SOURCE_FILES
 
 add_library(apriltag ${SOURCE_FILES})
 
-#add_executable(demo
-#        example/apriltag_demo.c
-#        )
-#target_link_libraries(demo
-#        apriltag
-
-#)
-
 add_executable(opencv_demo
         example/opencv_demo.cc
         )
@@ -88,11 +87,18 @@ target_link_libraries(opencv_demo
 add_executable(duo_pose
         example/DuoAprilTag.cpp
         example/DUOReader.cpp
+        pose/PoseEstimate.cpp
         )
 target_link_libraries(duo_pose
         ${DUO_LIBRARY}
         apriltag
         ${OpenCV_LIBS}
         ${GLOG_LIBRARY}
+        ${EIGEN3_LIBS}
+        ${BLAS_LIBRARIES}
+        ${LAPACK_LIBRARIES}
+        ${Pangolin_LIBRARIES}
+        g2o_core g2o_stuff g2o_solver_csparse g2o_types_sba g2o_csparse_extension
+        ${CSPARSE_LIBRARY}
 )
 
