@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 2.8)
 project(apriltag)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall -Wunused -O3 -march=native ")
@@ -47,13 +47,13 @@ set(SOURCE_FILES
 
 add_library(apriltag ${SOURCE_FILES})
 
-add_executable(demo
-        example/apriltag_demo.c
-        )
-target_link_libraries(demo
-        apriltag
+#add_executable(demo
+#       example/apriltag_demo.c
+#       )
+#target_link_libraries(demo
+#        apriltag
 
-)
+#)
 
 add_executable(opencv_demo
         example/opencv_demo.cc
