@@ -33,14 +33,15 @@ void CALLBACK DUOCallback(const PDUOFrame pFrameData, void *pUserData) {
     right.data = _pFrameData->rightData;
     double timeStamp = pFrameData->timeStamp;
 
-    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
-    clahe->apply(left, _left);
+//    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+//    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
+//    clahe->apply(left, _left);
 
     cv::cvtColor(left, frame, cv::COLOR_GRAY2BGR);
     image_u8_t im = {.width = _pFrameData->width,
             .height = _pFrameData->height,
             .stride = _pFrameData->width,
-            .buf = _left.data
+            .buf = _pFrameData->leftData
     };
     apriltag_detector_t *td = (apriltag_detector_t *) pUserData;
     zarray_t *detections = apriltag_detector_detect(td, &im);
@@ -78,13 +79,13 @@ void CALLBACK DUOCallback(const PDUOFrame pFrameData, void *pUserData) {
     zarray_destroy(detections);
 
     imshow("Tag Detections", frame);
-    waitKey(10);
+    waitKey(1);
 
 }
 
 #define WIDTH    752
 #define HEIGHT    480
-#define FPS        10
+#define FPS        20
 
 
 
@@ -113,7 +114,7 @@ int main(int argc, char **argv) {
     duo_reader.SetAutoExpose(true);
     duo_reader.SetLed(10);
     duo_reader.SetIMURate(100);
-    duo_reader.SetUndistort(false);
+    duo_reader.SetUndistort(true);
 
 
     getopt_t *getopt = getopt_create();
@@ -126,8 +127,8 @@ int main(int argc, char **argv) {
     getopt_add_int(getopt, 't', "threads", "4", "Use this many CPU threads");
     getopt_add_double(getopt, 'x', "decimate", "1.0", "Decimate input image by this factor");
     getopt_add_double(getopt, 'b', "blur", "0.0", "Apply low-pass blur to input");
-    getopt_add_bool(getopt, '0', "refine-edges", 1, "Spend more time trying to align edges of tags");
-    getopt_add_bool(getopt, '1', "refine-decode", 0, "Spend more time trying to decode tags");
+    getopt_add_bool(getopt, '0', "refine-edges", 0, "Spend more time trying to align edges of tags");
+    getopt_add_bool(getopt, '1', "refine-decode", 1, "Spend more time trying to decode tags");
     getopt_add_bool(getopt, '2', "refine-pose", 0, "Spend more time trying to precisely localize tags");
 
     if (!getopt_parse(getopt, argc, argv, 1) ||
