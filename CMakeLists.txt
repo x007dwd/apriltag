@@ -4,13 +4,33 @@ project(apriltag)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall -Wunused -O3 -march=native ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -march=native")
 set(CMAKE_CXX_STANDARD 11)
+
+LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake-modules)
+
+set(DUO_SDK ${PROJECT_SOURCE_DIR}/example/SDK)
+include_directories(${DUO_SDK}/include)
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+    set(DUOLib_ARCH arm)
+else ()
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(DUOLib_ARCH x64)
+    else ()
+        set(DUOLib_ARCH x86)
+    endif ()
+endif ()
+find_library(DUO_LIBRARY DUO HINTS ${DUO_SDK}/linux/${DUOLib_ARCH})
+
+find_package( Glog REQUIRED )
+find_package(OpenCV REQUIRED)
+
 include_directories(
         common
         include
+        example
         ${PROJECT_SOURCE_DIR}
+        ${GLOG_INCLUDE_DIRS}
 )
 
-find_package(OpenCV REQUIRED)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 set(SOURCE_FILES
@@ -47,13 +67,12 @@ set(SOURCE_FILES
 
 add_library(apriltag ${SOURCE_FILES})
 
-add_executable(demo
-        example/apriltag_demo.c
-        )
-target_link_libraries(demo
-        apriltag
-
-)
+#add_executable(demo
+#        example/apriltag_demo.c
+#        )
+#target_link_libraries(demo
+#        apriltag
+#)
 
 add_executable(opencv_demo
         example/opencv_demo.cc
@@ -62,3 +81,14 @@ target_link_libraries(opencv_demo
         ${OpenCV_LIBS}
         apriltag
         )
+
+add_executable(duo_pose
+        example/DUOStereoVIO.cpp
+        example/DUOReader.cpp
+        )
+target_link_libraries(duo_pose
+        ${DUO_LIBRARY}
+        apriltag
+        ${OpenCV_LIBS}
+        ${GLOG_LIBRARY}
+)

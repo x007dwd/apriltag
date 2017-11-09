@@ -1,0 +1,101 @@
+%YAML:1.0
+
+
+
+# if running in pure stereo vision mode
+PureVisionMode: false
+
+# do we need visualization?
+UseViewer: true
+
+# Camera calibration and distortion parameters (OpenCV)
+Camera.fx: 385.66
+Camera.fy: 372.219
+Camera.cx: 374.432
+Camera.cy: 224.909
+
+Camera.k1: 0.0
+Camera.k2: 0.0
+Camera.p1: 0.0
+Camera.p2: 0.0
+
+Camera.width: 752
+Camera.height: 480
+
+# stereo baseline times fx
+Camera.bf: 47.90639384423901
+
+# left cam to IMU transform
+RBC: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [-1, 0., 0.,
+         0, 1, 0,
+        0.,0.,-1]
+
+TBC: !!opencv-matrix
+  rows: 3
+  cols: 1
+  dt: d
+  data: [0,0,0]
+
+#--------------------------------------------------------------------------------------------
+# Stereo Rectification. Only if you need to pre-rectify the images.
+# Camera.fx, .fy, etc must be the same as in LEFT.P
+#--------------------------------------------------------------------------------------------
+LEFT.height: 480
+LEFT.width: 752
+LEFT.D: !!opencv-matrix
+   rows: 1
+   cols: 8
+   dt: d
+   data:[ 62.9343,77.8347,0.0029252,-0.000586146,10.0121,63.549,105.334,38.6493]
+LEFT.K: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 386.522, 0, 374.643,0, 373.013, 224.783,0, 0, 1]
+LEFT.R:  !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 0.999986, -2.12267e-05, -0.00532979,
+           3.33706e-05, 0.999997, 0.00227842,
+           0.00532973, -0.00227857, 0.999983]
+LEFT.P:  !!opencv-matrix
+   rows: 3
+   cols: 4
+   dt: d
+   data: [ 299.553, 0, 377.975, 0,
+           0, 299.553, 221.346, 0,
+           0, 0, 1, 0]
+
+RIGHT.height: 480
+RIGHT.width: 752
+RIGHT.D: !!opencv-matrix
+   rows: 1
+   cols: 8
+   dt: d
+   data:[ 9.67615,33.0797,0.00379371,-0.000858619,5.32946,10.162,37.1382,19.1134]
+RIGHT.K: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 386.522, 0, 374.643,
+           0, 373.013, 224.783,
+           0, 0, 1]
+RIGHT.R:  !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 0.999824, 0.00370218, -0.0184019,
+           -0.0037441, 0.99999, -0.00224415,
+           0.0183935, 0.00231265, 0.999828]
+RIGHT.P:  !!opencv-matrix
+   rows: 3
+   cols: 4
+   dt: d
+   data: [ 299.553, 0, 377.975, -8901.72,
+           0, 299.553, 221.346, 0,
+           0, 0, 1, 0]
