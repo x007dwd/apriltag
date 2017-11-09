@@ -15,6 +15,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <mutex>
 
 #define WAIT_OBJECT_0    0
 
@@ -72,7 +73,10 @@ public:
 
     void GetExntrinsic(cv::Mat &extr);
 
-
+    cv::Mat left, right;
+    double timeStamp;
+    std::mutex mMutexCamera;
+    bool ready;
 private:
 
     void initTermios(int echo);

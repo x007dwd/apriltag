@@ -9,6 +9,8 @@
 
 DUOReader::DUOReader() {
     _evFrame = CreateEvent(NULL, 0, 0, NULL);
+    ready = false;
+
 }
 
 DUOReader::~DUOReader() {

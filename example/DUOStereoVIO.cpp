@@ -18,74 +18,88 @@
 #include <SDK/include/DUOLib.h>
 #include <glog/logging.h>
 #include "DUOReader.h"
-
+#include <thread>
 using namespace std;
 using namespace cv;
 
 
 void CALLBACK DUOCallback(const PDUOFrame pFrameData, void *pUserData) {
     PDUOFrame _pFrameData = pFrameData;
+    DUOReader *duoReader = (DUOReader*)pUserData;
+    unique_lock<mutex> lock(duoReader->mMutexCamera);
+    duoReader->left.create(_pFrameData->height, _pFrameData->width, CV_8U);
+    duoReader->right.create(_pFrameData->height, _pFrameData->width, CV_8U);
+    duoReader->left.data = _pFrameData->leftData;
+    duoReader->right.data = _pFrameData->rightData;
+    duoReader->timeStamp = pFrameData->timeStamp;
+    duoReader->ready = true;
+//    imshow("Tag Detections", duoReader->left);
+//    waitKey(10);
+}
 
-    cv::Mat left, right, frame, _left;
-    left.create(_pFrameData->height, _pFrameData->width, CV_8U);
-    right.create(_pFrameData->height, _pFrameData->width, CV_8U);
-    left.data = _pFrameData->leftData;
-    right.data = _pFrameData->rightData;
-    double timeStamp = pFrameData->timeStamp;
 
-//    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-//    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
-//    clahe->apply(left, _left);
 
-    cv::cvtColor(left, frame, cv::COLOR_GRAY2BGR);
-    image_u8_t im = {.width = _pFrameData->width,
-            .height = _pFrameData->height,
-            .stride = _pFrameData->width,
-            .buf = _pFrameData->leftData
-    };
-    apriltag_detector_t *td = (apriltag_detector_t *) pUserData;
-    zarray_t *detections = apriltag_detector_detect(td, &im);
-    cout << zarray_size(detections) << " tags detected" << endl;
+void detect(void *reader, void *pUserData) {
+    cv::Mat frame, gray;
+    DUOReader *duo_reader = (DUOReader*)reader;
+    while (1) {
+//        cout << "aaa" << endl;
+//        continue;
+        cout << duo_reader->ready << endl;
+        if (duo_reader->ready == false)
+            continue;
+        gray = duo_reader->left;
+        cv::cvtColor(gray, frame, cv::COLOR_GRAY2BGR);
+        image_u8_t im = {.width = gray.cols,
+                .height = gray.rows,
+                .stride = gray.cols,
+                .buf = gray.data
+        };
+        apriltag_detector_t *td = (apriltag_detector_t *) pUserData;
+        zarray_t *detections = apriltag_detector_detect(td, &im);
+        cout << zarray_size(detections) << " tags detected" << endl;
 
-    // Draw detection outlines
-    for (int i = 0; i < zarray_size(detections); i++) {
-        apriltag_detection_t *det;
-        zarray_get(detections, i, &det);
-        line(frame, Point(det->p[0][0], det->p[0][1]),
-             Point(det->p[1][0], det->p[1][1]),
-             Scalar(0, 0xff, 0), 2);
-        line(frame, Point(det->p[0][0], det->p[0][1]),
-             Point(det->p[3][0], det->p[3][1]),
-             Scalar(0, 0, 0xff), 2);
-        line(frame, Point(det->p[1][0], det->p[1][1]),
-             Point(det->p[2][0], det->p[2][1]),
-             Scalar(0xff, 0, 0), 2);
-        line(frame, Point(det->p[2][0], det->p[2][1]),
-             Point(det->p[3][0], det->p[3][1]),
-             Scalar(0xff, 0, 0), 2);
+        // Draw detection outlines
+        for (int i = 0; i < zarray_size(detections); i++) {
+            apriltag_detection_t *det;
+            zarray_get(detections, i, &det);
+            line(frame, Point(det->p[0][0], det->p[0][1]),
+                 Point(det->p[1][0], det->p[1][1]),
+                 Scalar(0, 0xff, 0), 2);
+            line(frame, Point(det->p[0][0], det->p[0][1]),
+                 Point(det->p[3][0], det->p[3][1]),
+                 Scalar(0, 0, 0xff), 2);
+            line(frame, Point(det->p[1][0], det->p[1][1]),
+                 Point(det->p[2][0], det->p[2][1]),
+                 Scalar(0xff, 0, 0), 2);
+            line(frame, Point(det->p[2][0], det->p[2][1]),
+                 Point(det->p[3][0], det->p[3][1]),
+                 Scalar(0xff, 0, 0), 2);
 
-        stringstream ss;
-        ss << det->id;
-        String text = ss.str();
-        int fontface = FONT_HERSHEY_SCRIPT_SIMPLEX;
-        double fontscale = 1.0;
-        int baseline;
-        Size textsize = getTextSize(text, fontface, fontscale, 2,
-                                    &baseline);
-        putText(frame, text, Point(det->c[0] - textsize.width / 2,
-                                   det->c[1] + textsize.height / 2),
-                fontface, fontscale, Scalar(0xff, 0x99, 0), 2);
+            stringstream ss;
+            ss << det->id;
+            String text = ss.str();
+            int fontface = FONT_HERSHEY_SCRIPT_SIMPLEX;
+            double fontscale = 1.0;
+            int baseline;
+            Size textsize = getTextSize(text, fontface, fontscale, 2,
+                                        &baseline);
+            putText(frame, text, Point(det->c[0] - textsize.width / 2,
+                                       det->c[1] + textsize.height / 2),
+                    fontface, fontscale, Scalar(0xff, 0x99, 0), 2);
+        }
+        zarray_destroy(detections);
+
+        imshow("Tag Detections", frame);
+        waitKey(10);
+        duo_reader->ready = false;
     }
-    zarray_destroy(detections);
-
-    imshow("Tag Detections", frame);
-    waitKey(1);
 
 }
 
 #define WIDTH    752
 #define HEIGHT    480
-#define FPS        20
+#define FPS        30
 
 
 
@@ -110,10 +124,10 @@ int main(int argc, char **argv) {
     DUOReader duo_reader;
     duo_reader.OpenDUOCamera(WIDTH, HEIGHT, FPS);
     duo_reader.SetGain(10);
-//    duo_reader.SetExposure(100);
-    duo_reader.SetAutoExpose(true);
-    duo_reader.SetLed(10);
-    duo_reader.SetIMURate(100);
+    duo_reader.SetExposure(100);
+//    duo_reader.SetAutoExpose(true);
+    duo_reader.SetLed(100);
+    duo_reader.SetIMURate(10);
     duo_reader.SetUndistort(true);
 
 
@@ -151,14 +165,15 @@ int main(int argc, char **argv) {
     td->refine_decode = getopt_get_bool(getopt, "refine-decode");
     td->refine_pose = getopt_get_bool(getopt, "refine-pose");
 
+    std::thread* detect_thread;
+    detect_thread = new thread(detect, &duo_reader, td);
+    duo_reader.StartDUOFrame(DUOCallback, &duo_reader);
 
-    duo_reader.StartDUOFrame(DUOCallback, td);
+
     duo_reader.CloseDUOCamera();
-
     apriltag_detector_destroy(td);
     tag25h9_destroy(tf);
     getopt_destroy(getopt);
-
     return 0;
 }
 
