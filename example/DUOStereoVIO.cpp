@@ -26,17 +26,21 @@ using namespace cv;
 void CALLBACK DUOCallback(const PDUOFrame pFrameData, void *pUserData) {
     PDUOFrame _pFrameData = pFrameData;
 
-    cv::Mat left, right, frame;
+    cv::Mat left, right, frame, _left;
     left.create(_pFrameData->height, _pFrameData->width, CV_8U);
     right.create(_pFrameData->height, _pFrameData->width, CV_8U);
     left.data = _pFrameData->leftData;
     right.data = _pFrameData->rightData;
     double timeStamp = pFrameData->timeStamp;
+
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
+    clahe->apply(left, _left);
+
     cv::cvtColor(left, frame, cv::COLOR_GRAY2BGR);
     image_u8_t im = {.width = _pFrameData->width,
             .height = _pFrameData->height,
             .stride = _pFrameData->width,
-            .buf = _pFrameData->leftData
+            .buf = _left.data
     };
     apriltag_detector_t *td = (apriltag_detector_t *) pUserData;
     zarray_t *detections = apriltag_detector_detect(td, &im);
