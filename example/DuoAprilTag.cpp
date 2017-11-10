@@ -265,7 +265,6 @@ int main(int argc, char **argv) {
     duo_reader.CloseDUOCamera();
 
 
-    duo_reader.CloseDUOCamera();
     apriltag_detector_destroy(td);
     tag25h9_destroy(tf);
     getopt_destroy(getopt);

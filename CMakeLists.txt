@@ -102,3 +102,21 @@ target_link_libraries(duo_pose
         ${CSPARSE_LIBRARY}
 )
 
+add_executable(duo_track
+        example/DUOTracker.cpp
+        example/Tracker.cpp
+        example/DUOReader.cpp
+        pose/PoseEstimate.cpp
+        )
+target_link_libraries(duo_track
+        ${DUO_LIBRARY}
+        apriltag
+        ${OpenCV_LIBS}
+        ${GLOG_LIBRARY}
+        ${EIGEN3_LIBS}
+        ${BLAS_LIBRARIES}
+        ${LAPACK_LIBRARIES}
+        ${Pangolin_LIBRARIES}
+        g2o_core g2o_stuff g2o_solver_csparse g2o_types_sba g2o_csparse_extension
+        ${CSPARSE_LIBRARY}
+        )

@@ -61,18 +61,22 @@ void PoseEstimate::set_pose(const cv::Mat &r, const cv::Mat &t) {
 }
 
 void PoseEstimate::estimate(vector<Point3f> pts_3d,
-                            vector<Point2f> pts_2d
+                            vector<Point2f> pts_2d,
+                            bool check_last
                             ) {
     cv::Mat r, t, R;
     solvePnP(pts_3d, pts_2d, K, Mat(), r, t, false); // 调用OpenCV 的 PnP 求解，可选择EPNP，DLS等方法
 
 
     float delta_r, delta_t;
-//    pose_distance(r, t, delta_r, delta_t);
-//    if ((delta_r > max_rot) || (delta_t > max_trans)) {
-//        r = last_r;
-//        t = last_t;
-//    }
+    if (check_last){
+        pose_distance(r, t, delta_r, delta_t);
+        if ((delta_r > max_rot) || (delta_t > max_trans)) {
+            r = last_r;
+            t = last_t;
+        }
+    }
+
 
     cv::Rodrigues(r, R); // r为旋转向量形式，用Rodrigues公式转换为矩阵
     cout << "R=" << endl << R << endl;

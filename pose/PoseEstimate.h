@@ -21,7 +21,8 @@ public:
             cv::Mat &R, cv::Mat &t);
 
     void estimate(std::vector<cv::Point3f> pts_3d,
-                  std::vector<cv::Point2f> pts_2d);
+                  std::vector<cv::Point2f> pts_2d,
+                  bool check_last = false);
 
     void set_pose(const cv::Mat &r, const cv::Mat &t);
 
