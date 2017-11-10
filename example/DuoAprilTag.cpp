@@ -39,28 +39,7 @@ void CALLBACK DUOCallback(const PDUOFrame pFrameData, void *pUserData) {
 }
 
 
-void object_points(int numGridX, int numGridY,
-                   float GridWidth, float GridHeight,
-                   float GridX, float GridY,
-                   int num_ids, vector<vector<Point3f>> &GridPointXY) {
-    int cnt = 0;;
-    GridPointXY.resize(num_ids);
-    for (int i = 0; i < numGridY; ++i) {
-        vector<Point3f> rowGridXY;
-        rowGridXY.resize(4);
-        for (int j = 0; j < numGridX; ++j) {
-            rowGridXY[0] = Point3f(j * GridX, i * GridY, 0);
-            rowGridXY[1] = Point3f(j * GridX + GridWidth, i * GridY, 0);
-            rowGridXY[2] = Point3f(j * GridX, i * GridY + GridHeight, 0);
-            rowGridXY[3] = Point3f(j * GridX + GridWidth, i * GridY + GridHeight, 0);
-            GridPointXY[cnt] = rowGridXY;
-            cnt++;
-            if(cnt >= num_ids)
-                break;
-        }
 
-    }
-}
 
 void collect_corners(zarray_t *detections, vector<Point2f> &corners) {
 
@@ -75,34 +54,34 @@ void collect_corners(zarray_t *detections, vector<Point2f> &corners) {
 }
 
 
+void collect_point_3d(zarray_t *detections, const vector<vector<Point3f>> &all_points_3d, vector<Point3f> &detect_points) {
+    unsigned num = zarray_size(detections);
+    detect_points.resize(num * 4);
+    for (int i = 0; i < num; i++) {
+        apriltag_detection_t *det;
+        zarray_get(detections, i, &det);
+        for (int j = 0; j < 4; ++j) {
+            detect_points[j] = all_points_3d[det->id][j];
+        }
 
+    }
+}
 
-void detect(const cv::Mat gray, apriltag_detector_t *td) {
-
-    cv::Mat frame;
-    cv::cvtColor(gray, frame, cv::COLOR_GRAY2BGR);
-    image_u8_t im = {.width = gray.cols,
-            .height = gray.rows,
-            .stride = gray.cols,
-            .buf = gray.data
-    };
-    zarray_t *detections = apriltag_detector_detect(td, &im);
-    cout << zarray_size(detections) << " tags detected" << endl;
-
+void  draw_detect(zarray_t *detections, cv::Mat & image){
     // Draw detection outlines
     for (int i = 0; i < zarray_size(detections); i++) {
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
-        line(frame, Point(det->p[0][0], det->p[0][1]),
+        line(image, Point(det->p[0][0], det->p[0][1]),
              Point(det->p[1][0], det->p[1][1]),
              Scalar(0, 0xff, 0), 2);
-        line(frame, Point(det->p[0][0], det->p[0][1]),
+        line(image, Point(det->p[0][0], det->p[0][1]),
              Point(det->p[3][0], det->p[3][1]),
              Scalar(0, 0, 0xff), 2);
-        line(frame, Point(det->p[1][0], det->p[1][1]),
+        line(image, Point(det->p[1][0], det->p[1][1]),
              Point(det->p[2][0], det->p[2][1]),
              Scalar(0xff, 0, 0), 2);
-        line(frame, Point(det->p[2][0], det->p[2][1]),
+        line(image, Point(det->p[2][0], det->p[2][1]),
              Point(det->p[3][0], det->p[3][1]),
              Scalar(0xff, 0, 0), 2);
 
@@ -114,32 +93,98 @@ void detect(const cv::Mat gray, apriltag_detector_t *td) {
         int baseline;
         Size textsize = getTextSize(text, fontface, fontscale, 2,
                                     &baseline);
-        putText(frame, text, Point(det->c[0] - textsize.width / 2,
+        putText(image, text, Point(det->c[0] - textsize.width / 2,
                                    det->c[1] + textsize.height / 2),
                 fontface, fontscale, Scalar(0xff, 0x99, 0), 2);
     }
-    zarray_destroy(detections);
+}
 
-    imshow("Tag Detections", frame);
+
+void detect(const cv::Mat gray, apriltag_detector_t *td, PoseEstimate *estimator) {
+
+    cv::Mat color;
+    cv::cvtColor(gray, color, cv::COLOR_GRAY2BGR);
+    image_u8_t im = {.width = gray.cols,
+            .height = gray.rows,
+            .stride = gray.cols,
+            .buf = gray.data
+    };
+    zarray_t *detections = apriltag_detector_detect(td, &im);
+    cout << zarray_size(detections) << " tags detected" << endl;
+    vector<Point2f> corners;
+
+    vector<Point3f> detect_points;
+    collect_corners(detections, corners);
+    collect_point_3d(detections, estimator->GridPointXY, detect_points);
+//    estimator->set_pose();
+//    estimator
+//    estimator->estimate(detect_points, corners, )
+    draw_detect(detections, color);
+    zarray_destroy(detections);
+    imshow("Tag Detections", color);
     waitKey(10);
 }
 
-void detect_func(void *reader, void *detector) {
+void detect_func(void *reader, void *detector, void * estimator) {
 
     cv::Mat frame, gray;
     DUOReader *duo_reader = (DUOReader *) reader;
+    PoseEstimate *pestimator = (PoseEstimate *)estimator;
     while (1) {
-//        cout << "aaa" << endl;
-//        continue;
         cout << duo_reader->ready << endl;
         if (duo_reader->ready == false)
             continue;
-        detect(duo_reader->left, (apriltag_detector *) detector);
+        detect(duo_reader->left, (apriltag_detector *) detector, pestimator);
         duo_reader->ready = false;
     }
 
 }
 
+void DUOInit(DUOReader& duo_reader, int image_width, int image_height, int fps){
+    duo_reader.OpenDUOCamera(image_width, image_height, fps);
+    duo_reader.SetGain(10);
+    duo_reader.SetExposure(100);
+//    duo_reader.SetAutoExpose(true);
+    duo_reader.SetLed(100);
+    duo_reader.SetIMURate(10);
+    duo_reader.SetUndistort(true);
+}
+
+void get_opt(getopt_t *getopt, int argc, char **argv){
+    getopt_add_bool(getopt, 'h', "help", 0, "Show this help");
+    getopt_add_bool(getopt, 'd', "debug", 0, "Enable debugging output (slow)");
+    getopt_add_bool(getopt, 'q', "quiet", 0, "Reduce output");
+    getopt_add_string(getopt, 'f', "family", "tag25h9", "Tag family to use");
+    getopt_add_int(getopt, '\0', "border", "1", "Set tag family border size");
+    getopt_add_int(getopt, 't', "threads", "4", "Use this many CPU threads");
+    getopt_add_double(getopt, 'x', "decimate", "1.0", "Decimate input image by this factor");
+    getopt_add_double(getopt, 'b', "blur", "0.0", "Apply low-pass blur to input");
+    getopt_add_bool(getopt, '0', "refine-edges", 0, "Spend more time trying to align edges of tags");
+    getopt_add_bool(getopt, '1', "refine-decode", 1, "Spend more time trying to decode tags");
+    getopt_add_bool(getopt, '2', "refine-pose", 0, "Spend more time trying to precisely localize tags");
+
+    if (!getopt_parse(getopt, argc, argv, 1) ||
+        getopt_get_bool(getopt, "help")) {
+        printf("Usage: %s [options]\n", argv[0]);
+        getopt_do_usage(getopt);
+        exit(0);
+    }
+}
+
+
+void creat_detector(apriltag_family_t *tf , apriltag_detector_t *td, getopt_t *getopt){
+    td = apriltag_detector_create();
+    tf = tag25h9_create();
+    tf->black_border = getopt_get_int(getopt, "border");
+    apriltag_detector_add_family(td, tf);
+    td->quad_decimate = getopt_get_double(getopt, "decimate");
+    td->quad_sigma = getopt_get_double(getopt, "blur");
+    td->nthreads = getopt_get_int(getopt, "threads");
+    td->debug = getopt_get_bool(getopt, "debug");
+    td->refine_edges = getopt_get_bool(getopt, "refine-edges");
+    td->refine_decode = getopt_get_bool(getopt, "refine-decode");
+    td->refine_pose = getopt_get_bool(getopt, "refine-pose");
+}
 
 int main(int argc, char **argv) {
 
@@ -180,62 +225,29 @@ int main(int argc, char **argv) {
 
     PoseEstimate estimator(max_trans, max_rot);
 
-    vector<vector<Point3f>> points;
-    object_points(numGridX, numGridY, GridWidth, GridHeight, GridX, GridY, 35, points);
 
-    for (int i = 0; i < 35; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            cout << points[i][j].x << '\t' << points[i][j].y << endl;
-        }
-    }
+    estimator.object_points(numGridX, numGridY, GridWidth, GridHeight, GridX, GridY, 35);
+//    vector<vector<Point3f>> &points = estimator.GridPointXY;
+
+//    for (int i = 0; i < 35; ++i) {
+//        for (int j = 0; j < 4; ++j) {
+//            cout << points[i][j].x << '\t' << points[i][j].y << endl;
+//        }
+//    }
 
     DUOReader duo_reader;
-    duo_reader.OpenDUOCamera(image_width, image_height, fps);
-    duo_reader.SetGain(10);
-    duo_reader.SetExposure(100);
-//    duo_reader.SetAutoExpose(true);
-    duo_reader.SetLed(100);
-    duo_reader.SetIMURate(10);
-    duo_reader.SetUndistort(true);
-
+    DUOInit(duo_reader, image_width, image_height, fps);
 
     getopt_t *getopt = getopt_create();
-
-    getopt_add_bool(getopt, 'h', "help", 0, "Show this help");
-    getopt_add_bool(getopt, 'd', "debug", 0, "Enable debugging output (slow)");
-    getopt_add_bool(getopt, 'q', "quiet", 0, "Reduce output");
-    getopt_add_string(getopt, 'f', "family", "tag25h9", "Tag family to use");
-    getopt_add_int(getopt, '\0', "border", "1", "Set tag family border size");
-    getopt_add_int(getopt, 't', "threads", "4", "Use this many CPU threads");
-    getopt_add_double(getopt, 'x', "decimate", "1.0", "Decimate input image by this factor");
-    getopt_add_double(getopt, 'b', "blur", "0.0", "Apply low-pass blur to input");
-    getopt_add_bool(getopt, '0', "refine-edges", 0, "Spend more time trying to align edges of tags");
-    getopt_add_bool(getopt, '1', "refine-decode", 1, "Spend more time trying to decode tags");
-    getopt_add_bool(getopt, '2', "refine-pose", 0, "Spend more time trying to precisely localize tags");
-
-    if (!getopt_parse(getopt, argc, argv, 1) ||
-        getopt_get_bool(getopt, "help")) {
-        printf("Usage: %s [options]\n", argv[0]);
-        getopt_do_usage(getopt);
-        exit(0);
-    }
+    get_opt(getopt, argc, argv);
 
     apriltag_family_t *tf = NULL;
-    tf = tag25h9_create();
-    tf->black_border = getopt_get_int(getopt, "border");
-    apriltag_detector_t *td = apriltag_detector_create();
-    apriltag_detector_add_family(td, tf);
-    td->quad_decimate = getopt_get_double(getopt, "decimate");
-    td->quad_sigma = getopt_get_double(getopt, "blur");
-    td->nthreads = getopt_get_int(getopt, "threads");
-    td->debug = getopt_get_bool(getopt, "debug");
-    td->refine_edges = getopt_get_bool(getopt, "refine-edges");
-    td->refine_decode = getopt_get_bool(getopt, "refine-decode");
-    td->refine_pose = getopt_get_bool(getopt, "refine-pose");
+    apriltag_detector_t *td = NULL;
+    creat_detector(tf, td, getopt);
 
     std::thread *detect_thread;
 
-    detect_thread = new thread(detect_func, &duo_reader, td);
+    detect_thread = new thread(detect_func, &duo_reader, td, &estimator);
     duo_reader.StartDUOFrame(DUOCallback, td);
     duo_reader.CloseDUOCamera();
 

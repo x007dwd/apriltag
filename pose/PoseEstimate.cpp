@@ -31,6 +31,30 @@ float PoseEstimate::pose_distance(const cv::Mat &r, const cv::Mat &t, float &del
 
 }
 
+void PoseEstimate::object_points(int numGridX, int numGridY,
+                   float GridWidth, float GridHeight,
+                   float GridX, float GridY,
+                   int num_ids) {
+    int cnt = 0;;
+    GridPointXY.resize(num_ids);
+    for (int i = 0; i < numGridY; ++i) {
+        vector<Point3f> rowGridXY;
+        rowGridXY.resize(4);
+        for (int j = 0; j < numGridX; ++j) {
+            rowGridXY[0] = Point3f(j * GridX, i * GridY, 0);
+            rowGridXY[1] = Point3f(j * GridX + GridWidth, i * GridY, 0);
+            rowGridXY[2] = Point3f(j * GridX, i * GridY + GridHeight, 0);
+            rowGridXY[3] = Point3f(j * GridX + GridWidth, i * GridY + GridHeight, 0);
+            GridPointXY[cnt] = rowGridXY;
+            cnt++;
+            if(cnt >= num_ids)
+                break;
+        }
+
+    }
+}
+
+
 void PoseEstimate::set_pose(const cv::Mat &r, const cv::Mat &t) {
     last_r = r;
     last_t = t;
