@@ -7,7 +7,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <vector>
-
+#include "mutex"
 
 class PoseEstimate {
 
@@ -26,6 +26,8 @@ public:
 
     void set_pose(const cv::Mat &r, const cv::Mat &t);
 
+    void get_pose(cv::Mat& pose);
+
     void set_camera(const cv::Mat& _K){K=_K;}
 
     float pose_distance(const cv::Mat &r, const cv::Mat &t, float &delta_rot, float &delta_trans);
@@ -37,7 +39,9 @@ public:
     std::vector<std::vector<cv::Point3f>> GridPointXY;
 
 private:
+    std::mutex rotMutex;
     cv::Mat last_r;
+    std::mutex transMutex;
     cv::Mat last_t;
     float max_trans;
     float max_rot;

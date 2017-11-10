@@ -56,8 +56,19 @@ void PoseEstimate::object_points(int numGridX, int numGridY,
 
 
 void PoseEstimate::set_pose(const cv::Mat &r, const cv::Mat &t) {
+    unique_lock<mutex> lock(rotMutex);
     last_r = r;
     last_t = t;
+}
+
+void PoseEstimate::get_pose(cv::Mat &pose) {
+    unique_lock<mutex> lock(rotMutex);
+    cv::Mat R, t;
+    cv::Rodrigues(last_r, R);
+    t = last_t;
+
+    R.copyTo(pose.rowRange(0, 3).colRange(0, 3));
+    t.copyTo(pose.rowRange(0, 3).col(3));
 }
 
 void PoseEstimate::estimate(vector<Point3f> pts_3d,
@@ -67,7 +78,7 @@ void PoseEstimate::estimate(vector<Point3f> pts_3d,
     cv::Mat r, t, R;
     solvePnP(pts_3d, pts_2d, K, Mat(), r, t, false); // 调用OpenCV 的 PnP 求解，可选择EPNP，DLS等方法
 
-
+//    unique_lock<mutex> lock(rotMutex);
     float delta_r, delta_t;
     if (check_last){
         pose_distance(r, t, delta_r, delta_t);
@@ -76,11 +87,9 @@ void PoseEstimate::estimate(vector<Point3f> pts_3d,
             t = last_t;
         }
     }
-
-
     cv::Rodrigues(r, R); // r为旋转向量形式，用Rodrigues公式转换为矩阵
-    cout << "R=" << endl << R << endl;
-    cout << "t=" << endl << t << endl;
+    cout << "R=" << endl << r << endl;
+//    cout << "t=" << endl << t << endl;
     PoseEstimate::bundleAdjustment(pts_3d, pts_2d, K, R, t);
     cv::Rodrigues(R, r); // r为旋转向量形式，用Rodrigues公式转换为矩阵
     set_pose(r, t);
@@ -154,6 +163,6 @@ void PoseEstimate::bundleAdjustment(
     chrono::duration<double> time_used = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
 //    cout << "optimization costs time: " << time_used.count() << " seconds." << endl;
 
-    cout << endl << "after optimization:" << endl;
-    cout << "T=" << endl << Eigen::Isometry3d(pose->estimate()).matrix() << endl;
+//    cout << endl << "after optimization:" << endl;
+//    cout << "T=" << endl << Eigen::Isometry3d(pose->estimate()).matrix() << endl;
 }

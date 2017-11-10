@@ -27,6 +27,7 @@ find_package( G2O REQUIRED )
 find_package( CSparse REQUIRED )
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(Pangolin REQUIRED)
 include_directories(
         common
         include
@@ -107,6 +108,7 @@ add_executable(duo_track
         example/Tracker.cpp
         example/DUOReader.cpp
         pose/PoseEstimate.cpp
+        pose/Viewer.cpp
         )
 target_link_libraries(duo_track
         ${DUO_LIBRARY}

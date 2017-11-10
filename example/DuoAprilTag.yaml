@@ -101,13 +101,27 @@ RIGHT.P:  !!opencv-matrix
            0, 299.553, 221.346, 0,
            0, 0, 1, 0]
 
-Tag.width : 0.114
-Tag.height : 0.114
-Tag.gridx: 0.03
-Tag.gridy: 0.03
+Tag.width: 0.114
+Tag.height: 0.114
+Tag.gridx: 0.144
+Tag.gridy: 0.144
 Tag.numx: 6
 Tag.numy: 6
 
 maxRot: 0.1
 maxTrans: 0.3
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.6
+Viewer.KeyFrameLineWidth: 2
+Viewer.GraphLineWidth: 1
+Viewer.PointSize: 2
+Viewer.CameraSize: 0.7
+Viewer.CameraLineWidth: 3
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -0.1
+Viewer.ViewpointZ: -10
+Viewer.ViewpointF: 2000
 

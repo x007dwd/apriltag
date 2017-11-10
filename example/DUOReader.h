@@ -76,6 +76,7 @@ public:
     cv::Mat left, right;
     double timeStamp;
     std::mutex mMutexCamera;
+
     bool ready;
 private:
 

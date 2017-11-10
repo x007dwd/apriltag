@@ -29,7 +29,11 @@ Tracker::Tracker(const cv::FileStorage &_fsSetting) {
     InitReader();
     InitDetector();
     state = Init;
-    std::thread *detect_thread = new thread(&Tracker::run, this);
+    std::thread *detectThread = new thread(&Tracker::run, this);
+
+    viewer = new Viewer(fsSettings, this);
+    std::thread *viewThread = new thread(&Viewer::Run, viewer);
+
     duo_reader.StartDUOFrame(DUOCallback, &duo_reader);
 
 }
@@ -76,7 +80,8 @@ void Tracker::InitReader() {
     image_height = fsSettings["Camera.height"];
     int fps = fsSettings["Camera.FPS"];
 
-    duo_reader.OpenDUOCamera(image_width, image_height, fps);
+    if (false == duo_reader.OpenDUOCamera(image_width, image_height, fps))
+        exit(0);
     duo_reader.SetGain(10);
     duo_reader.SetExposure(100);
 //    duo_reader.SetAutoExpose(true);
@@ -136,13 +141,17 @@ Tracker::~Tracker() {
 
 
 void Tracker::collect_corners(zarray_t *detections, vector<Point2f> &corners) {
-
-    for (int i = 0; i < zarray_size(detections); i++) {
+    int num = zarray_size(detections);
+    corners.resize(num * 4);
+    for (int i = 0; i < num; i++) {
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
-        for (int j = 0; j < 4; ++j) {
-            corners.push_back(Point2f(det->p[j][0], det->p[j][1]));
-        }
+
+        corners[i * 4] = Point2f(det->p[3][0], det->p[3][1]);
+        corners[i * 4 + 1] = Point2f(det->p[2][0], det->p[2][1]);
+        corners[i * 4 + 2] = Point2f(det->p[0][0], det->p[0][1]);
+        corners[i * 4 + 3] = Point2f(det->p[1][0], det->p[1][1]);
+
 
     }
 }
@@ -155,7 +164,7 @@ void Tracker::collect_point_3d(zarray_t *detections, vector<Point3f> &detect_poi
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
         for (int j = 0; j < 4; ++j) {
-            detect_points[j] = estimator->GridPointXY[det->id][j];
+            detect_points[4 * i + j] = estimator->GridPointXY[det->id][j];
         }
 
     }
@@ -168,16 +177,16 @@ void Tracker::draw_detect(zarray_t *detections, cv::Mat &image) {
         zarray_get(detections, i, &det);
         line(image, Point(det->p[0][0], det->p[0][1]),
              Point(det->p[1][0], det->p[1][1]),
-             Scalar(0, 0xff, 0), 2);
+             Scalar(0, 0xff, 0), 1);
         line(image, Point(det->p[0][0], det->p[0][1]),
              Point(det->p[3][0], det->p[3][1]),
              Scalar(0, 0, 0xff), 2);
         line(image, Point(det->p[1][0], det->p[1][1]),
              Point(det->p[2][0], det->p[2][1]),
-             Scalar(0xff, 0, 0), 2);
+             Scalar(0xff, 0, 0), 3);
         line(image, Point(det->p[2][0], det->p[2][1]),
              Point(det->p[3][0], det->p[3][1]),
-             Scalar(0xff, 0, 0), 2);
+             Scalar(0xff, 0, 0), 4);
 
         stringstream ss;
         ss << det->id;
@@ -198,7 +207,7 @@ void Tracker::detect() {
 
     cv::Mat color;
     cv::Mat gray = duo_reader.left;
-    cv::cvtColor(gray, color, cv::COLOR_GRAY2BGR);
+    cv::cvtColor(gray, color, cv::COLOR_GRAY2RGB);
     image_u8_t im = {.width = gray.cols,
             .height = gray.rows,
             .stride = gray.cols,
@@ -207,35 +216,54 @@ void Tracker::detect() {
     zarray_t *detections = apriltag_detector_detect(td, &im);
     int detect_num = zarray_size(detections);
     cout << detect_num << " tags detected" << endl;
+
+    vector<int> detect_ids;
+    for (int i = 0; i < zarray_size(detections); i++) {
+        apriltag_detection_t *det;
+        zarray_get(detections, i, &det);
+        detect_ids.push_back(det->id);
+    }
+    viewer->SetCurrentDetectID(detect_ids);
     vector<Point2f> corners;
     vector<Point3f> detect_points;
     collect_corners(detections, corners);
     collect_point_3d(detections, detect_points);
 
-    if (detect_num >= 2){
-        if (state == Init){
+    if (detect_num >= 2) {
+        if (state == Init) {
             estimator->estimate(detect_points, corners);
             state = Start;
-        } else{
+        } else {
             estimator->estimate(detect_points, corners, true);
         }
+
     } else {
         state = Init;
     }
-
+    cv::Mat cur_pose = Mat::eye(4, 4, CV_32F);
+//    estimator->get_pose(cur_pose);
+    viewer->SetCurrentCameraPose(cur_pose);
     draw_detect(detections, color);
+    drawDetect = color;
     zarray_destroy(detections);
-    imshow("Tag Detections", color);
-    waitKey(10);
+//    return;
+
 }
+
+
 
 void Tracker::run() {
 
     while (1) {
+//        unique_lock<mutex> lock(duoMutex);
         if (duo_reader.ready == false)
             continue;
         duo_reader.ready = false;
         detect();
     }
 
+}
+
+void Tracker::getAllTagPoints(std::vector<std::vector<cv::Point3f>> &points) {
+    points = estimator->GridPointXY;
 }
