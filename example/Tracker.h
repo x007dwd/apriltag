@@ -35,7 +35,9 @@ public:
     };
 
     void getAllTagPoints(std::vector<std::vector<cv::Point3f>> &points);
-    cv::Mat getDrawDetect(){ return drawDetect; }
+
+    cv::Mat getDrawDetect() { return drawDetect; }
+
 private:
 
     void InitEstimator();

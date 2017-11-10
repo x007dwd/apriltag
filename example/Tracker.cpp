@@ -17,8 +17,9 @@ void CALLBACK DUOCallback(const PDUOFrame pFrameData, void *pUserData) {
     duoReader->right.data = _pFrameData->rightData;
     duoReader->timeStamp = pFrameData->timeStamp;
     duoReader->ready = true;
-//    imshow("call back", duoReader->left);
-//    waitKey(10);
+    cv::imshow("Tag Detections", duoReader->left);
+    cv::waitKey(10);
+
 }
 
 Tracker::Tracker(const cv::FileStorage &_fsSetting) {
@@ -241,15 +242,13 @@ void Tracker::detect() {
         state = Init;
     }
     cv::Mat cur_pose = Mat::eye(4, 4, CV_32F);
-//    estimator->get_pose(cur_pose);
+    estimator->get_pose(cur_pose);
     viewer->SetCurrentCameraPose(cur_pose);
     draw_detect(detections, color);
     drawDetect = color;
     zarray_destroy(detections);
-//    return;
 
 }
-
 
 
 void Tracker::run() {

@@ -93,8 +93,8 @@ void Viewer::Run() {
 
         DrawMapPoints();
 
-        cv::imshow("Tag Detections", tracker->getDrawDetect());
-        cv::waitKey(mT);
+//        cv::imshow("Tag Detections", tracker->getDrawDetect());
+//        cv::waitKey(10);
 
         pangolin::FinishFrame();
 
@@ -312,8 +312,8 @@ void Viewer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M) {
             Rwc = mCameraPose.rowRange(0, 3).colRange(0, 3).t();
             twc = -Rwc * mCameraPose.rowRange(0, 3).col(3);
         }
-//        cout << "Rwc=" << endl << Rwc << endl;
-//        cout << "twc=" << endl << twc << endl;
+        cout << "Rwc=" << endl << Rwc << endl;
+        cout << "twc=" << endl << twc << endl;
         M.m[0] = Rwc.at<float>(0, 0);
         M.m[1] = Rwc.at<float>(1, 0);
         M.m[2] = Rwc.at<float>(2, 0);

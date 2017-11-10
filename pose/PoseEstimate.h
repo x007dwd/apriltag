@@ -41,7 +41,6 @@ public:
 private:
     std::mutex rotMutex;
     cv::Mat last_r;
-    std::mutex transMutex;
     cv::Mat last_t;
     float max_trans;
     float max_rot;

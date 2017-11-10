@@ -34,8 +34,8 @@ void CALLBACK DUOCallback(const PDUOFrame pFrameData, void *pUserData) {
     duoReader->right.data = _pFrameData->rightData;
     duoReader->timeStamp = pFrameData->timeStamp;
     duoReader->ready = true;
-//    imshow("Tag Detections", duoReader->left);
-//    waitKey(10);
+    imshow("Tag", duoReader->left);
+    waitKey(10);
 }
 
 

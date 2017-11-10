@@ -88,7 +88,7 @@ void PoseEstimate::estimate(vector<Point3f> pts_3d,
         }
     }
     cv::Rodrigues(r, R); // r为旋转向量形式，用Rodrigues公式转换为矩阵
-    cout << "R=" << endl << r << endl;
+//    cout << "R=" << endl << r << endl;
 //    cout << "t=" << endl << t << endl;
     PoseEstimate::bundleAdjustment(pts_3d, pts_2d, K, R, t);
     cv::Rodrigues(R, r); // r为旋转向量形式，用Rodrigues公式转换为矩阵
