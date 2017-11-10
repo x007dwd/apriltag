@@ -1,4 +1,4 @@
-## 基于apriltag的位姿估计
+# 基于apriltag的位姿估计
 1. 检测图像中的tag 及其 ID.
 2. 根据预先打印的tag的顺序, 确定实际的三维点的位置.
 3. 使用pnp完成位姿的初值估计, 使用g2o完成bundle asjustment.
