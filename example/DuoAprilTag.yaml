@@ -101,10 +101,10 @@ RIGHT.P:  !!opencv-matrix
            0, 299.553, 221.346, 0,
            0, 0, 1, 0]
 
-Tag.width : 0.8
-Tag.height : 0.8
-Tag.gridx: 1.0
-Tag.gridy: 2.0
+Tag.width : 0.114
+Tag.height : 0.114
+Tag.gridx: 0.03
+Tag.gridy: 0.03
 Tag.numx: 6
 Tag.numy: 6
 

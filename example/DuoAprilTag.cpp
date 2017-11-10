@@ -118,7 +118,7 @@ void detect(const cv::Mat gray, apriltag_detector_t *td, PoseEstimate *estimator
     collect_point_3d(detections, estimator->GridPointXY, detect_points);
 //    estimator->set_pose();
 //    estimator
-//    estimator->estimate(detect_points, corners, )
+    estimator->estimate(detect_points, corners);
     draw_detect(detections, color);
     zarray_destroy(detections);
     imshow("Tag Detections", color);
@@ -131,7 +131,7 @@ void detect_func(void *reader, void *detector, void * estimator) {
     DUOReader *duo_reader = (DUOReader *) reader;
     PoseEstimate *pestimator = (PoseEstimate *)estimator;
     while (1) {
-        cout << duo_reader->ready << endl;
+//        cout << duo_reader->ready << endl;
         if (duo_reader->ready == false)
             continue;
         detect(duo_reader->left, (apriltag_detector *) detector, pestimator);
@@ -145,7 +145,7 @@ void DUOInit(DUOReader& duo_reader, int image_width, int image_height, int fps){
     duo_reader.SetGain(10);
     duo_reader.SetExposure(100);
 //    duo_reader.SetAutoExpose(true);
-    duo_reader.SetLed(100);
+    duo_reader.SetLed(30);
     duo_reader.SetIMURate(10);
     duo_reader.SetUndistort(true);
 }
@@ -173,8 +173,7 @@ void get_opt(getopt_t *getopt, int argc, char **argv){
 
 
 void creat_detector(apriltag_family_t *tf , apriltag_detector_t *td, getopt_t *getopt){
-    td = apriltag_detector_create();
-    tf = tag25h9_create();
+
     tf->black_border = getopt_get_int(getopt, "border");
     apriltag_detector_add_family(td, tf);
     td->quad_decimate = getopt_get_double(getopt, "decimate");
@@ -208,6 +207,18 @@ int main(int argc, char **argv) {
     image_height = fsSettings["Camera.height"];
     int fps = fsSettings["Camera.FPS"];
 
+    float fx, fy, cx, cy;
+    fx = fsSettings["Camera.fx"];
+    fy = fsSettings["Camera.fy"];
+    cx = fsSettings["Camera.cx"];
+    cy = fsSettings["Camera.cy"];
+
+    cv::Mat K = cv::Mat::eye(3, 3, CV_64F);
+    K.at<double>(0, 0) =fx;
+    K.at<double>(1, 1) =fy;
+    K.at<double>(0, 2) =cx;
+    K.at<double>(1, 2) =cy;
+
     int numGridX, numGridY;
     float GridWidth, GridHeight;
     float GridX, GridY;
@@ -224,7 +235,7 @@ int main(int argc, char **argv) {
     max_trans = fsSettings["maxTrans"];
 
     PoseEstimate estimator(max_trans, max_rot);
-
+    estimator.set_camera(K);
 
     estimator.object_points(numGridX, numGridY, GridWidth, GridHeight, GridX, GridY, 35);
 //    vector<vector<Point3f>> &points = estimator.GridPointXY;
@@ -243,12 +254,14 @@ int main(int argc, char **argv) {
 
     apriltag_family_t *tf = NULL;
     apriltag_detector_t *td = NULL;
+    td = apriltag_detector_create();
+    tf = tag25h9_create();
     creat_detector(tf, td, getopt);
 
     std::thread *detect_thread;
 
     detect_thread = new thread(detect_func, &duo_reader, td, &estimator);
-    duo_reader.StartDUOFrame(DUOCallback, td);
+    duo_reader.StartDUOFrame(DUOCallback, &duo_reader);
     duo_reader.CloseDUOCamera();
 
 
