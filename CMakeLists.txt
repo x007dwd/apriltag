@@ -109,6 +109,9 @@ add_executable(duo_track
         example/DUOReader.cpp
         pose/PoseEstimate.cpp
         pose/Viewer.cpp
+        pose/PnPsolver.cpp
+        pose/Random.cpp
+        pose/Timestamp.cpp
         )
 target_link_libraries(duo_track
         ${DUO_LIBRARY}
