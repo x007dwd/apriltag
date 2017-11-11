@@ -5,3 +5,27 @@
 4. 使用pangolin可视化显示相机和tag.
 
 被检测的id标记在图像中, 所有的id显示在pangolin的窗口中(蓝色), 其中检测到的id标注红色.
+
+# Install
+1. 依赖 Glog, G2O, CSparse, OpenCV, Eigen3, Pangolin. 分别安装
+```
+sudo apt-get install libgooglelog-dev, libopencv-dev, libeigen3-dev.
+```
+2. 下载[g2o](https://github.com/RainerKuemmerle/g2o.git)源代码, 编译安装.
+```
+cd g2o
+mkdir build & cd build
+cmake ..
+make
+sudo make install
+
+```
+3. 下载[pangolin](https://github.com/stevenlovegrove/Pangolin.git)编译安装.
+```
+cd pangolin
+mkdir build & cd build
+cmake ..
+make
+sudo make install
+
+```
