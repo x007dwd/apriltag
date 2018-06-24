@@ -30,5 +30,6 @@ int main(int argc, char **argv) {
         LOG(FATAL) << "Cannot load the config file from " << argv[1] << endl;
     }
     Tracker tracker(fsSettings);
+//    vector::erase()
 
 }

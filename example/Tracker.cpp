@@ -94,7 +94,7 @@ void Tracker::InitReader() {
 
 void Tracker::get_opt(getopt_t *getopt) {
     getopt_add_bool(getopt, 'h', "help", 0, "Show this help");
-    getopt_add_bool(getopt, 'd', "debug", 0, "Enable debugging output (slow)");
+    getopt_add_bool(getopt, 'd', "debug", 1, "Enable debugging output (slow)");
     getopt_add_bool(getopt, 'q', "quiet", 0, "Reduce output");
     getopt_add_string(getopt, 'f', "family", "tag25h9", "Tag family to use");
     getopt_add_int(getopt, '\0', "border", "1", "Set tag family border size");

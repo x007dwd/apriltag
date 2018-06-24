@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     }
 
     // Initialize camera
-    VideoCapture cap(0);
+    VideoCapture cap(argv[1]);
     if (!cap.isOpened()) {
         cerr << "Couldn't open video capture device" << endl;
         return -1;
@@ -106,10 +106,17 @@ int main(int argc, char *argv[])
     td->refine_pose = getopt_get_bool(getopt, "refine-pose");
 
     Mat frame, gray;
-    while (true) {
-        cap >> frame;
+    bool video_end = true;
+    unsigned int frame_count = 0;
+    while (true == video_end) {
+//        cap >> frame;
+        video_end = cap.read(frame);
         cvtColor(frame, gray, COLOR_BGR2GRAY);
-
+        cvtColor(gray, frame, COLOR_GRAY2BGR);
+        frame_count++;
+        stringstream fnss;
+        fnss << "./data/origin/" << frame_count << ".png";
+        imwrite(fnss.str(), gray);
         // Make an image_u8_t header for the Mat data
         image_u8_t im = { .width = gray.cols,
             .height = gray.rows,
@@ -150,7 +157,9 @@ int main(int argc, char *argv[])
                     fontface, fontscale, Scalar(0xff, 0x99, 0), 2);
         }
         zarray_destroy(detections);
-
+        stringstream fnss2;
+        fnss2 << "./data/result/" << frame_count << ".png";
+        imwrite(fnss2.str(), frame);
         imshow("Tag Detections", frame);
         if (waitKey(30) >= 0)
             break;
